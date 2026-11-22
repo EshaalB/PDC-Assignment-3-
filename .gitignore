@@ -1,0 +1,16 @@
+# build outputs
+*.o
+*.out
+*.exe
+serial
+parallel
+cs*/bin/
+# run outputs
+*.log
+cs*/results/*.tmp
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+# submission zip
+Group*_Assignment3.zip
