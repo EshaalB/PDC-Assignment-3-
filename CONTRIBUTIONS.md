@@ -1,48 +1,31 @@
-# Contributions — GroupXX
+# Contributions - 23L-0648, 23L-0570
 
 | Member | Roll No. | Main responsibility |
 |--------|----------|---------------------|
-| Member A — Eshaal B | <roll no.> | CS1 (heat, MPI), CS2 (k-mer, OpenMP), CS5 (sample sort, MPI) |
-| Member B — <name>   | <roll no.> | CS3 (Monte Carlo), CS4 (PageRank, OpenMP) |
+| Eshaal Rehamtullah | 23L-0648 | CS1 (heat, MPI), CS2 (k-mer, OpenMP), CS5 (sample sort, MPI), report |
+| Atika Hussain | 23L-0570 | CS3 (Monte Carlo, OpenMP), CS4 (PageRank, OpenMP) |
 
-## Lead / reviewer assignment
+Hours are rough estimates.
 
-| Case study | Lead | Reviewer |
-|------------|------|----------|
-| CS1 Heat diffusion (MPI)        | Member A | Member B |
-| CS2 k-mer counting (OpenMP)     | Member A | Member B |
-| CS3 Monte Carlo pricing         | Member B | Member A |
-| CS4 PageRank (OpenMP)           | Member B | Member A |
-| CS5 Sample sort (MPI)           | Member A | Member B |
+## Eshaal Rehamtullah (23L-0648)
 
-Shared: slide deck, cross-case comparison, final integration build.
+| Task | Approx. hours | Files |
+|------|---------------|-------|
+| Repo setup, directory structure, top-level Makefile | 1 | `Makefile`, `README.md`, `.gitignore` |
+| CS1 serial + MPI (1D/2D, blocking/non-blocking, Allreduce check), verification | 6 | `cs1_heat_mpi/serial.c`, `parallel.c`, `Makefile` |
+| CS1 experiments (strong, weak, K=1 vs 50) + graphs | 4 | `cs1_heat_mpi/run_experiments.sh`, `analyze.py`, `results/` |
+| CS2 serial + OpenMP versions A/B/C/U, verification | 5 | `cs2_kmer_openmp/*.c`, `kmer_common.h` |
+| CS2 experiments (scaling, atomic vs private, false sharing) + graphs | 3 | `cs2_kmer_openmp/run_experiments.sh`, `analyze.py`, `results/` |
+| CS5 serial + MPI sample sort, ping-pong, verification | 6 | `cs5_samplesort_mpi/*.c`, `sort_common.h` |
+| CS5 experiments (scaling, phases, oversampling, alpha/beta) + graphs | 4 | `cs5_samplesort_mpi/run_experiments.sh`, `analyze.py`, `results/` |
+| Final report | 6 | `report/report.docx` |
+| **Total** | **about 35** | |
 
-## Member A — tasks, hours, commits
+## Atika Hussain (23L-0570)
 
-| Task | Approx. hours | Files / commits |
-|------|---------------|-----------------|
-| Repo setup, directory skeleton | | |
-| CS1 serial + MPI (1-D, 2-D, blocking/non-blocking) | | `cs1_heat_mpi/*` |
-| CS2 serial + OpenMP versions A/B/C + false sharing | | `cs2_kmer_openmp/*` |
-| CS5 serial + MPI sample sort | | `cs5_samplesort_mpi/*` |
-| Report sections CS1, CS2, CS5 | | `report/` |
-| Review of CS3, CS4 (build + rerun) | | |
-| **Total** | | |
-
-## Member B — tasks, hours, commits
-
-| Task | Approx. hours | Files / commits |
-|------|---------------|-----------------|
-| CS3 serial + parallel Monte Carlo | | `cs3_montecarlo/*` |
-| CS4 serial + pull/push PageRank | | `cs4_pagerank_openmp/*` |
-| Report sections CS3, CS4 | | `report/` |
-| Review of CS1, CS2, CS5 (build + rerun) | | |
-| **Total** | | |
-
-## Joint work
-
-| Task | Hours (A / B) |
-|------|---------------|
-| Slides | |
-| Cross-case comparison | |
-| Final integration build test | |
+| Task | Approx. hours | Files |
+|------|---------------|-------|
+| CS3 serial + parallel Monte Carlo (RNG modes, reproducibility) | 10 | `cs3_montecarlo/*` |
+| CS4 serial + pull/push PageRank, schedules | 12 | `cs4_pagerank_openmp/*` |
+| CS3/CS4 graphs and tables | 3 | `cs3_montecarlo/report/`, `cs4_pagerank_openmp/report/` |
+| **Total** | **about 25** | |
