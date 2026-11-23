@@ -14,3 +14,12 @@ Thumbs.db
 .vscode/
 # submission zip
 Group*_Assignment3.zip
+pingpong
+results_log.txt
+# LaTeX build files
+*.aux
+*.nav
+*.snm
+*.toc
+*.vrb
+*.out
