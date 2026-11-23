@@ -1,14 +1,16 @@
-CC = gcc
-CFLAGS = -O3 -Wall -fopenmp
-LDLIBS = -lm
+CC       = gcc
+CFLAGS   = -O3 -march=native -Wall -Wextra
+OMPFLAGS = -fopenmp
+LDLIBS   = -lm
+HDRS     = pr_common.h
 
 all: serial parallel
 
-serial: serial.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
-parallel: parallel.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+serial: serial.c $(HDRS)
+	$(CC) $(CFLAGS) $(OMPFLAGS) serial.c -o serial $(LDLIBS)
+
+parallel: parallel.c $(HDRS)
+	$(CC) $(CFLAGS) $(OMPFLAGS) parallel.c -o parallel $(LDLIBS)
 
 clean:
 	rm -f serial parallel
-.PHONY: all clean
