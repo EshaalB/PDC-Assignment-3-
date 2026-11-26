@@ -15,15 +15,16 @@ Outputs:
     report/figures/cs3_rng_performance.png
     report/figures/cs3_price_accuracy.png
     report/figures/cs3_standard_error.png
+    report/figures/cs3_strong_scaling.png
     report/tables/cs3_rng_comparison.md
     report/tables/cs3_reproducibility.md
+    report/tables/cs3_strong_scaling.md
+    report/tables/cs3_timed.md
 
-Important:
-The supplied measurements use 2,000,000 and 4,000,000 paths. The assignment
-requires M >= 100,000,000 for the main experiment. These plots document the
-current diagnostic runs; rerun with M >= 100,000,000 before using them as the
-final assignment results. Missing timings/standard errors are deliberately
-not invented or inferred.
+Note:
+The 2M/4M diagnostic runs document the RNG-mode comparison; the M = 100,000,000
+strong-scaling and -m timed (-T 5) runs were measured on the Intel Core i7-1255U
+(2 P-cores + 8 E-cores, Fedora, gcc -O3, OMP_PROC_BIND=close OMP_PLACES=cores).
 """
 import os
 import numpy as np
@@ -87,6 +88,24 @@ REPRO = [
      "varies between repetitions", "Not reproducible (reported NO)"],
     ["parallel, M=2M", "4", "sameseed",
      "0x1.4dd3eb261a4d3p+3", "Repeatable, but streams are correlated"],
+]
+
+# Strong scaling (M = 100,000,000, seed = 42, median of 3 runs,
+# Intel Core i7-1255U, OMP_PROC_BIND=close OMP_PLACES=cores).
+T_SERIAL_100M = 1.656829
+STRONG_100M = [
+    dict(p=1, time=1.590752, price=10.45047924, se=0.00147196, mpaths_s=100.0 / 1.590752),
+    dict(p=2, time=0.957298, price=10.44942835, se=0.00147190, mpaths_s=100.0 / 0.957298),
+    dict(p=4, time=0.767562, price=10.44985081, se=0.00147202, mpaths_s=100.0 / 0.767562),
+    dict(p=8, time=0.383659, price=10.45185139, se=0.00147210, mpaths_s=100.0 / 0.383659),
+]
+
+# Fixed 5-second time budget (-m timed -T 5, seed = 42).
+TIMED_5S = [
+    dict(p=1, M=318_636_032, time=5.000918, price=10.45039541, se=0.00082457, abs_err=0.00018817, z=0.23),
+    dict(p=2, M=544_604_160, time=5.000317, price=10.44996541, se=0.00063068, abs_err=0.00061817, z=0.98),
+    dict(p=4, M=875_233_280, time=5.000973, price=10.45014605, se=0.00049753, abs_err=0.00043752, z=0.88),
+    dict(p=8, M=1_519_124_480, time=5.001917, price=10.45037976, se=0.00037764, abs_err=0.00020381, z=0.54),
 ]
 
 
@@ -197,13 +216,82 @@ def fig_standard_error():
     save(fig, "cs3_standard_error.png")
 
 
+def fig_strong_scaling():
+    ps = np.array([x["p"] for x in STRONG_100M], dtype=float)
+    ts = np.array([x["time"] for x in STRONG_100M], dtype=float)
+    speedup = T_SERIAL_100M / ts
+    eff = speedup / ps
+
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(10, 4))
+    p_ideal = np.arange(1, 9)
+    a1.plot(p_ideal, p_ideal, "k--", lw=1, label="ideal")
+    a1.plot(ps, speedup, "o-", color=BLUE, label="perthread (static split)")
+    for pi, si in zip(ps, speedup):
+        if int(pi) == 2:
+            a1.text(pi + 0.15, si - 0.55, f"{si:.2f}x", ha="left", va="top", fontsize=8)
+        else:
+            a1.text(pi, si + 0.2, f"{si:.2f}x", ha="center", va="bottom", fontsize=8)
+    a1.set_xlabel("OpenMP threads p")
+    a1.set_ylabel("speedup  S(p) = T_serial / T_p")
+    a1.set_title("Strong scaling (M = 100,000,000)")
+    a1.set_xticks([1, 2, 4, 8])
+    a1.set_ylim(0, 8.6)
+    a1.legend(frameon=False, fontsize=8)
+
+    a2.axhline(1.0, ls="--", color="black", lw=1, label="ideal")
+    a2.axhline(0.7, ls=":", color=GREY, lw=1)
+    a2.plot(ps, eff, "o-", color=BLUE, label="perthread (static split)")
+    for pi, ei in zip(ps, eff):
+        a2.text(pi, ei + 0.03, f"{ei:.2f}", ha="center", va="bottom", fontsize=8)
+    a2.set_xlabel("OpenMP threads p")
+    a2.set_ylabel("efficiency  E(p) = S(p) / p")
+    a2.set_title("Parallel efficiency (M = 100,000,000)")
+    a2.set_xticks([1, 2, 4, 8])
+    a2.set_ylim(0, 1.18)
+    a2.legend(frameon=False, fontsize=8)
+
+    fig.suptitle(f"CS3 Monte Carlo strong scaling (M = 100,000,000, serial T = {T_SERIAL_100M:.3f} s; median of 3 runs)")
+    save(fig, "cs3_strong_scaling.png")
+
+    rows = [["serial", "1", f"{T_SERIAL_100M:.4f}", f"{100.0 / T_SERIAL_100M:.2f}", "1.00", "1.00"]]
+    for x in STRONG_100M:
+        s = T_SERIAL_100M / x["time"]
+        rows.append([
+            "perthread", str(x["p"]), f'{x["time"]:.4f}', f'{x["mpaths_s"]:.2f}',
+            f"{s:.2f}", f'{s / x["p"]:.2f}'
+        ])
+    write_md(
+        "cs3_strong_scaling.md",
+        "CS3 strong scaling (M = 100,000,000, seed = 42, median of 3 runs, Intel Core i7-1255U)",
+        ["mode", "p", "T (s)", "Mpaths/s", "S(p)", "E(p)"],
+        rows,
+        "Measured with OMP_PROC_BIND=close OMP_PLACES=cores on Intel Core i7-1255U (2 P-cores + 8 E-cores). "
+        "At p = 4 and p = 8, fast P-cores wait for slower E-cores under static equal splitting."
+    )
+
+    trows = []
+    for x in TIMED_5S:
+        rate = x["M"] / x["time"] / 1e6
+        trows.append([
+            str(x["p"]), f'{x["M"]:,}', f"{rate:.2f}", f'{x["price"]:.6f}',
+            f'{x["se"]:.6f}', f'{x["abs_err"]:.6f}', f'{x["z"]:.2f}'
+        ])
+    write_md(
+        "cs3_timed.md",
+        "CS3 fixed time budget (-m timed -T 5, seed = 42, Intel Core i7-1255U)",
+        ["p", "paths M", "Mpaths/s", "MC price", "SE", "|MC - BS|", "error / SE"],
+        trows,
+        "Increasing threads from 1 to 8 raises simulated paths 4.77x in 5 s and lowers SE by 2.18x (matching sqrt(4.77))."
+    )
+
+
 def main():
     print("CS3 Monte Carlo plots (using supplied terminal measurements)")
     print(f"Black–Scholes reference price: {BS_PRICE:.8f}")
-    print("NOTE: current measured M values are below the assignment's M >= 1e8 requirement.")
     fig_rng_performance()
     fig_price_accuracy()
     fig_standard_error()
+    fig_strong_scaling()
     write_md(
         "cs3_reproducibility.md",
         "CS3 reproducibility observations",
