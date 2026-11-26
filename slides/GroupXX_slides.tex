@@ -106,12 +106,26 @@ everything misses cache). False sharing: \textbf{5.1$\times$ slower} without pad
 \begin{columns}[T]
 \column{0.42\textwidth}
 \small
-\textbf{Problem:} \todo{one sentence}\\[0.4em]
-\todo{small decomposition diagram}
-\insight{\todo{one insight + one number}}
-\trynext{\todo{}}
+\textbf{Problem:} price a European call ($S_0{=}K{=}100$, $r{=}0.05$, $\sigma{=}0.2$, $T{=}1$) via $M$ GBM paths (Box--Muller) vs.\ Black--Scholes (\texttt{10.4506}).\\[0.4em]
+\begin{tikzpicture}[scale=0.5, every node/.style={font=\tiny}]
+  \foreach \i/\c in {0/blue!15,1/green!15,2/orange!20,3/red!15}
+   { \fill[\c] ({2*\i},0) rectangle ({2*\i+1.8},0.75);
+     \draw ({2*\i},0) rectangle ({2*\i+1.8},0.75);
+     \node[align=center] at ({2*\i+0.9},0.38) {T\i\\[-2pt]PCG};
+     \draw[->] ({2*\i+0.9},0)--({2*\i+0.9},-0.55);
+     \fill[\c] ({2*\i+0.15},-1.05) rectangle ({2*\i+1.65},-0.55);
+     \draw ({2*\i+0.15},-1.05) rectangle ({2*\i+1.65},-0.55);
+     \node at ({2*\i+0.9},-0.8) {$(s,q)$};
+     \draw[->] ({2*\i+0.9},-1.05)--(3.9,-1.65); }
+  \node[right,align=left] at (7.8,-0.8) {64\,B\\[-2pt]padded};
+  \draw[fill=gray!10] (1.5,-2.2) rectangle (6.3,-1.65);
+  \node at (3.9,-1.92) {\texttt{ordered\_sum} ($0..p{-}1$)};
+\end{tikzpicture}
+\insight{At $M{=}2\text{M}, p{=}4$: \texttt{perthread} hits \textbf{49.01\,Mpaths/s} (0.0408\,s); a \texttt{shared} locked RNG is \textbf{6.4$\times$ slower} (0.2601\,s, non-reproducible); \texttt{sameseed} correlates streams. \texttt{blocks} ($B{=}4096$) is \textbf{bit-identical} across $p{=}1,3,7$.}
+\trynext{full $M{\ge}10^8$ scaling sweep ($p{=}1..8$) + antithetic variates / SIMD Box--Muller.}
 \column{0.56\textwidth}
-\todo{speedup graph}
+\includegraphics[width=\textwidth]{cs3_rng_performance.png}\\[-0.3em]
+{\tiny RNG modes at $M{=}2\text{M}, p{=}4$ (median of 3 runs). At $M{=}4\text{M}, p{=}4$: \texttt{perthread} $= 10.4362 \pm 0.0074$ SE (BS $= 10.4506$); \texttt{parallel -t 1} matches \texttt{serial} bit-for-bit (\texttt{0x1.4e26e7b5ac647p+3}).}
 \end{columns}
 \end{frame}
 
@@ -120,12 +134,29 @@ everything misses cache). False sharing: \textbf{5.1$\times$ slower} without pad
 \begin{columns}[T]
 \column{0.42\textwidth}
 \small
-\textbf{Problem:} \todo{one sentence}\\[0.4em]
-\todo{small decomposition diagram (pull vs push)}
-\insight{\todo{one insight + one number}}
-\trynext{\todo{}}
+\textbf{Problem:} iterate PageRank ($d{=}0.85$, $\varepsilon{=}10^{-9}$, 24 iters) on R-MAT scale-20 CSR ($n{=}1.05\text{M}$, $m{=}16.08\text{M}$ edges).\\[0.4em]
+\begin{tikzpicture}[scale=0.45, every node/.style={font=\tiny}]
+  \node[font=\tiny\bfseries] at (1.9,2.1) {Pull (private write)};
+  \draw[fill=blue!15] (0.2,1.2) circle (0.35) node {$u_0$};
+  \draw[fill=blue!15] (0.2,0.2) circle (0.35) node {$u_1$};
+  \draw[fill=green!15] (3.4,0.7) circle (0.38) node {$v$};
+  \draw[->] (0.58,1.15)--(3.0,0.75);
+  \draw[->] (0.58,0.25)--(3.0,0.65);
+  \node[below,align=center] at (1.8,-0.25) {read \texttt{in.adj},\\[-2pt]no atomics};
+  \draw[dashed,gray] (5.1,-1.0)--(5.1,2.3);
+  \node[font=\tiny\bfseries] at (8.2,2.1) {Push (atomic scatter)};
+  \draw[fill=orange!20] (6.3,0.7) circle (0.38) node {$u$};
+  \draw[fill=red!15] (9.5,1.2) circle (0.35) node {$v_0$};
+  \draw[fill=red!15] (9.5,0.2) circle (0.35) node {$v_1$};
+  \draw[->,red!70!black] (6.7,0.75)--(9.12,1.15);
+  \draw[->,red!70!black] (6.7,0.65)--(9.12,0.25);
+  \node[below,align=center] at (8.0,-0.25) {write \texttt{out.adj},\\[-2pt]\texttt{omp atomic}};
+\end{tikzpicture}
+\insight{\texttt{pull} static stalls at \textbf{1.83$\times$} ($p{=}8$, imbalance $R{=}2.18$); \texttt{dynamic,256} hits \textbf{4.08$\times$} (0.348\,s, 1110\,M\,edges/s). \texttt{push} with atomics is \textbf{4.1$\times$ slower} than \texttt{pull} at $p{=}4$ (atomics add \textbf{+122\%} at $p{=}1$ plus hub contention).}
+\trynext{degree-ordered / cache-blocked CSR for \texttt{contrib[]} locality, or hybrid push--pull.}
 \column{0.56\textwidth}
-\todo{speedup graph}
+\includegraphics[width=\textwidth]{cs4_strong_scaling.png}\\[-0.3em]
+{\tiny Serial $T{=}1.4175$\,s; median of 3 runs. At $p{=}8$ (\texttt{pull}): \texttt{dynamic,256} $= 0.348$\,s (4.08$\times$), edge-balanced $= 0.551$\,s (2.57$\times$), \texttt{static} $= 0.776$\,s (1.83$\times$), \texttt{guided,64} $= 0.878$\,s (1.61$\times$).}
 \end{columns}
 \end{frame}
 
